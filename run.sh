@@ -5,20 +5,13 @@ set -e
 if [ -f .env ]; then
   export $(echo $(cat .env | sed 's/#.*//g'| xargs) | envsubst)
 fi
-
-echo $BACKUP_CONTENT_FOLDER
-echo $GHOST_CONTENT_FOLDER
-echo $BLOG_NAME
-echo $GHOST_URL
 #check if the backup directory exists
-if [ -d "$BACKUP_CONTENT_FOLDER" ];
+if [ -d "$GHOST_CONTENT_FOLDER" ];
 then
-    rm -r $BACKUP_CONTENT_FOLDER
-    cp -r $GHOST_CONTENT_FOLDER $BACKUP_CONTENT_FOLDER
-else
-    cp -r $GHOST_CONTENT_FOLDER $BACKUP_CONTENT_FOLDER
-
+    tar -cvf $BACKUP_CONTENT_DIR/$BLOG_NAME-$(date +%d-%m-%y-time-%H-%M-%S).tar.gz $GHOST_CONTENT_FOLDER
 fi
+
+find $BACKUP_CONTENT_DIR -type f -name "$BLOG_NAME-*" -mtime +7 -exec rm {} \;
 
 docker stop $BLOG_NAME || true
 docker rm $BLOG_NAME || true
