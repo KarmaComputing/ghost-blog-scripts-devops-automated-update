@@ -9,9 +9,9 @@ fi
 if [ -d "$GHOST_CONTENT_FOLDER" ];
 then
     tar -cvf $BACKUP_CONTENT_DIR/$BLOG_NAME-$(date +%d-%m-%y-time-%H-%M-%S).tar.gz $GHOST_CONTENT_FOLDER
+    find $BACKUP_CONTENT_DIR -type f -name "$BLOG_NAME-*" -mtime +7 -exec rm {} \;
 fi
 
-find $BACKUP_CONTENT_DIR -type f -name "$BLOG_NAME-*" -mtime +7 -exec rm {} \;
 
 docker stop $BLOG_NAME || true
 docker rm $BLOG_NAME || true
@@ -20,7 +20,7 @@ docker rm $BLOG_NAME || true
 response=$(curl -s $API_ENDPOINT)
 
 # Extract the version number of the latest Ghost image from the response
-latest_version=$(echo $response | jq -r '."results"[1]."name"')
+latest_version=$(echo $response | jq  -r '.results | map(select(.name | test("^[0-9].*alpine"))) | sort_by(.last_updated) | reverse | .[1].name')
 
 # Print the latest version number
 echo "The latest version of Ghost is: $latest_version"
@@ -35,4 +35,4 @@ docker run -d \
   -e database__useNullAsDefault=true \
   -e database__debug=false \
   --restart=unless-stopped \
-  ghost:$latest_version-alpine
+  ghost:$latest_version
