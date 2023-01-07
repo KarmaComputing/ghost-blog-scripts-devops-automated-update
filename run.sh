@@ -1,25 +1,30 @@
 #! /bin/bash
+set -x 
+set -e
 
+if [ -f .env ]; then
+  export $(echo $(cat .env | sed 's/#.*//g'| xargs) | envsubst)
+fi
+
+echo $BACKUP_CONTENT_FOLDER
+echo $GHOST_CONTENT_FOLDER
+echo $BLOG_NAME
+echo $GHOST_URL
 #check if the backup directory exists
-DIR=path/to/ghost/content/folder-bk
-if [ -d "$DIR" ];
+if [ -d "$BACKUP_CONTENT_FOLDER" ];
 then
-    rm -r path/to/ghost/content/folder-bk
-    cp -r path/to/ghost/content/folder path/to/ghost/content/folder-bk
+    rm -r $BACKUP_CONTENT_FOLDER
+    cp -r $GHOST_CONTENT_FOLDER $BACKUP_CONTENT_FOLDER
 else
-    cp -r path/to/ghost/content/folder path/to/ghost/content/folder-bk
+    cp -r $GHOST_CONTENT_FOLDER $BACKUP_CONTENT_FOLDER
 
 fi
 
-docker stop blog-name
-docker rm blog-name
-
-
-# Set the API endpoint for the Ghost image
-api_endpoint="https://registry.hub.docker.com/v2/repositories/library/ghost/tags"
+docker stop $BLOG_NAME || true
+docker rm $BLOG_NAME || true
 
 # Send a request to the API and save the response
-response=$(curl -s $api_endpoint)
+response=$(curl -s $API_ENDPOINT)
 
 # Extract the version number of the latest Ghost image from the response
 latest_version=$(echo $response | jq -r '."results"[1]."name"')
@@ -28,10 +33,10 @@ latest_version=$(echo $response | jq -r '."results"[1]."name"')
 echo "The latest version of Ghost is: $latest_version"
 
 docker run -d \
-  --name blog-name \
-  -v path/to/ghost/content/folder:/var/lib/ghost/content \
+  --name $BLOG_NAME \
+  -v $GHOST_CONTENT_FOLDER:/var/lib/ghost/content \
   -p 3010:2368 \
-  -e url=https://example-blog.com \
+  -e url=$GHOST_URL \
   -e database__client=sqlite3 \
   -e database__connection__filename="content/data/ghost.db" \
   -e database__useNullAsDefault=true \
