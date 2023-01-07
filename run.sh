@@ -5,16 +5,6 @@ set -e
 if [ -f .env ]; then
   export $(echo $(cat .env | sed 's/#.*//g'| xargs) | envsubst)
 fi
-#check if the backup directory exists
-if [ -d "$GHOST_CONTENT_FOLDER" ];
-then
-    tar -cvf $BACKUP_CONTENT_DIR/$BLOG_NAME-$(date +%d-%m-%y-time-%H-%M-%S).tar.gz $GHOST_CONTENT_FOLDER
-    find $BACKUP_CONTENT_DIR -type f -name "$BLOG_NAME-*" -mtime +7 -exec rm {} \;
-fi
-
-
-docker stop $BLOG_NAME || true
-docker rm $BLOG_NAME || true
 
 # Send a request to the API and save the response
 response=$(curl -s $API_ENDPOINT)
@@ -24,6 +14,25 @@ latest_version=$(echo $response | jq  -r '.results | map(select(.name | test("^[
 
 # Print the latest version number
 echo "The latest version of Ghost is: $latest_version"
+
+# Print the current version number
+current_version=$(docker inspect --format='{{.Config.Image}}' subscribie-blog | cut -d ":" -f 2)
+echo "The Current Version of Ghost on Production is: $current_version"
+
+if [ "$current_version" == "$latest_version" ]; then
+    echo "the latest and current version of Ghost is the same, exiting..."
+    exit
+fi
+
+#check if the backup directory exists
+if [ -d "$GHOST_CONTENT_FOLDER" ];
+then
+    tar -cvf $BACKUP_CONTENT_DIR/$BLOG_NAME-$(date +%d-%m-%y-time-%H-%M-%S).tar.gz $GHOST_CONTENT_FOLDER
+    find $BACKUP_CONTENT_DIR -type f -name "$BLOG_NAME-*" -mtime +7 -exec rm {} \;
+fi
+
+docker stop $BLOG_NAME || true
+docker rm $BLOG_NAME || true
 
 docker run -d \
   --name $BLOG_NAME \
