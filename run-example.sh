@@ -1,7 +1,19 @@
 #! /bin/bash
 
+#check if the backup directory exists
+DIR=path/to/ghost/content/folder-bk
+if [ -d "$DIR" ];
+then
+    rm -r path/to/ghost/content/folder-bk
+    cp -r path/to/ghost/content/folder path/to/ghost/content/folder-bk
+else
+    cp -r path/to/ghost/content/folder path/to/ghost/content/folder-bk
+
+fi
+
 docker stop blog-name
 docker rm blog-name
+
 
 # Set the API endpoint for the Ghost image
 api_endpoint="https://registry.hub.docker.com/v2/repositories/library/ghost/tags"
